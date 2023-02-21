@@ -22,16 +22,16 @@ class _HeadsetDetectionState extends State<HeadsetDetection> {
     _headsetPlugin.requestPermission();
 
     /// if headset is plugged
-    _headsetPlugin.getCurrentState.then((_val) {
+    _headsetPlugin.getCurrentState.then((val) {
       setState(() {
-        _headsetState = _val;
+        _headsetState = val;
       });
     });
 
     /// Detect the moment headset is plugged or unplugged
-    _headsetPlugin.setListener((_val) {
+    _headsetPlugin.setListener((val) {
       setState(() {
-        _headsetState = _val;
+        _headsetState = val;
       });
     });
   }
