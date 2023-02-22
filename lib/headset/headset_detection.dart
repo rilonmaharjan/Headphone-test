@@ -192,7 +192,7 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
               const SizedBox(height: 20,),
               InkWell(
                 onTap: (){
-                  callNumber();
+                  call();
                 },
                 child: const Icon(Icons.phone)
               ),
