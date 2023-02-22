@@ -48,12 +48,11 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
     _headsetPlugin.setListener((val) {
       setState(() {
         _headsetState = val;
-        if(_headsetState != HeadsetState.CONNECT){
-          call();
-        }   
+        _headsetState == HeadsetState.CONNECT
+          ? (){}
+          : callNumber();
       });
     });
-
   }
 
   @override
@@ -77,6 +76,7 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
                 callNumber();
               },
               child: const Icon(Icons.phone)),
+            
           ],
         ),
       ),
