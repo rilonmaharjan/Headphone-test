@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:headset_connection_event/headset_event.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 
 
 class HeadsetDetection extends StatefulWidget {
@@ -51,9 +52,21 @@ class _HeadsetDetectionState extends State<HeadsetDetection> {
                   : Colors.red,
             ),
             Text('State : $_headsetState\n'),
+            const SizedBox(height: 20,),
+            InkWell(
+              onTap: (){
+                callNumber();
+              },
+              child: const Icon(Icons.phone)),
           ],
         ),
       ),
     );
+  }
+
+  //Call number
+  callNumber() async{
+    const number = '9861333461'; //set the number here
+    await FlutterPhoneDirectCaller.callNumber(number);
   }
 }
