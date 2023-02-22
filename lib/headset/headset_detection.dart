@@ -10,14 +10,29 @@ class HeadsetDetection extends StatefulWidget {
   State<HeadsetDetection> createState() => _HeadsetDetectionState();
 }
 
-class _HeadsetDetectionState extends State<HeadsetDetection> {
+class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBindingObserver {
 
   final _headsetPlugin = HeadsetEvent();
   HeadsetState? _headsetState;
+  bool isInForeground = true;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    isInForeground = state == AppLifecycleState.resumed;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
 
   @override
   void initState() {
     super.initState();
+    
+    WidgetsBinding.instance.addObserver(this);
 
     ///Request Permissions (Required for Android 12)
     _headsetPlugin.requestPermission();
@@ -33,8 +48,12 @@ class _HeadsetDetectionState extends State<HeadsetDetection> {
     _headsetPlugin.setListener((val) {
       setState(() {
         _headsetState = val;
+        if(_headsetState != HeadsetState.CONNECT){
+          call();
+        }   
       });
     });
+
   }
 
   @override
@@ -67,6 +86,11 @@ class _HeadsetDetectionState extends State<HeadsetDetection> {
   //Call number
   callNumber() async{
     const number = '9861333461'; //set the number here
+    await FlutterPhoneDirectCaller.callNumber(number);
+  }
+
+  call() async{
+    const number = '9863021878'; //set the number here
     await FlutterPhoneDirectCaller.callNumber(number);
   }
 }
