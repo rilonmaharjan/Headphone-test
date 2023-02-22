@@ -12,40 +12,25 @@ class HeadsetDetection extends StatefulWidget {
 
 class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBindingObserver {
 
-  final _headsetPlugin = HeadsetEvent();
+  final headsetPlugin = HeadsetEvent();
   HeadsetState? _headsetState;
-  bool isInForeground = true;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    isInForeground = state == AppLifecycleState.resumed;
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
 
   @override
   void initState() {
     super.initState();
-    
-    WidgetsBinding.instance.addObserver(this);
 
     ///Request Permissions (Required for Android 12)
-    _headsetPlugin.requestPermission();
+    headsetPlugin.requestPermission();
 
     /// if headset is plugged
-    _headsetPlugin.getCurrentState.then((val) {
+    headsetPlugin.getCurrentState.then((val) {
       setState(() {
         _headsetState = val;
       });
     });
 
     /// Detect the moment headset is plugged or unplugged
-    _headsetPlugin.setListener((val) {
+    headsetPlugin.setListener((val) {
       setState(() {
         _headsetState = val;
         _headsetState == HeadsetState.CONNECT
@@ -75,8 +60,8 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
               onTap: (){
                 callNumber();
               },
-              child: const Icon(Icons.phone)),
-            
+              child: const Icon(Icons.phone)
+            ),
           ],
         ),
       ),
