@@ -39,6 +39,7 @@ dependencies:
   headset_connection_event: ^3.0.0
   flutter_phone_direct_caller: ^2.1.1
   flutter_foreground_task: ^4.1.0
+  shared_preferences: ^2.0.17
 
 dev_dependencies:
   flutter_test:

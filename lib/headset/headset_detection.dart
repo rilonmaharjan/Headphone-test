@@ -1,10 +1,10 @@
 import 'dart:isolate';
-
 import 'package:flutter/material.dart';
 import 'package:headphonetest/main.dart';
 import 'package:headset_connection_event/headset_event.dart';
 import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 class HeadsetDetection extends StatefulWidget {
@@ -15,8 +15,17 @@ class HeadsetDetection extends StatefulWidget {
 }
 
 class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBindingObserver {
+  bool popStatus = false;
+  final numberCon = TextEditingController();
+  late String savedNum;
+  var phoneNumber;
 
   ReceivePort? _receivePort;
+
+  // saveNumber() async{
+  //   final SharedPreferences _prefs = await _prefs;
+  //   savedNum = _prefs.setString('action', 'Start');
+  // }
 
   void _initForegroundTask() {
     FlutterForegroundTask.init(
@@ -129,6 +138,7 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
   @override
   void dispose() {
     _closeReceivePort();
+    numberCon.dispose();
     super.dispose();
   }
 
@@ -140,16 +150,18 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
   @override
   void initState() {
     super.initState();
+    //Check if the user has inputed a number
+    initialize();
 
     ///Request Permissions (Required for Android 12)
     headsetPlugin.requestPermission();
 
-    /// if headset is plugged
-    headsetPlugin.getCurrentState.then((val) {
-      setState(() {
-        _headsetState = val;
-      });
-    });
+    // /// if headset is plugged
+    // headsetPlugin.getCurrentState.then((val) {
+    //   setState(() {
+    //     _headsetState = val;
+    //   });
+    // });
 
     /// Detect the moment headset is plugged or unplugged
     headsetPlugin.setListener((val) {
@@ -169,32 +181,87 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
         _registerReceivePort(newReceivePort);
       }
     });
-
     _startForegroundTask();
+  }
+
+  initialize()async{
+    //Check if phone number is empty
+    var checkNo = await getStoredNumber();
+    if(checkNo == null || checkNo == ""){
+      popStatus = false;
+      showPopUp();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return WithForegroundTask(
       child: Scaffold(
-        appBar: AppBar(),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              const SizedBox(height: 20,),
               Icon(
                 Icons.headset,
                 color: _headsetState == HeadsetState.CONNECT
                     ? Colors.green
                     : Colors.red,
               ),
-              Text('State : $_headsetState\n'),
+              const SizedBox(height: 10,),
+              Text('State : ${_headsetState ?? "Not Connected"}\n'),
+              const SizedBox(height: 20,),
+              //Change Number
+              InkWell(
+                child: Container(
+                  height: 45,
+                  width: 150,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.only(
+                    left: 10.0,
+                    right: 10.0,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(5),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromARGB(255, 223, 223, 223),
+                        offset: Offset(0, 5),
+                        blurRadius: 5
+                      )
+                    ]
+                  ),
+                  child: const Text("Change Number", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),)
+                ),
+                onTap: (){
+                  showPopUp();
+                },
+              ),
+              //Test Call
               const SizedBox(height: 20,),
               InkWell(
+                child: Container(
+                  height: 60,
+                  width: 150,
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(5),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromARGB(255, 223, 223, 223),
+                        offset: Offset(0, 5),
+                        blurRadius: 5
+                      )
+                    ]
+                  ),
+                  child: const Text("Test Saved Number", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500), textAlign: TextAlign.center,)
+                ),
                 onTap: (){
-                  call();
+                  callNumber();
                 },
-                child: const Icon(Icons.phone)
               ),
             ],
           ),
@@ -204,13 +271,192 @@ class _HeadsetDetectionState extends State<HeadsetDetection> with WidgetsBinding
   }
 
   //Call number
-  callNumber() async{
-    const number = '9861333461'; //set the number here
-    await FlutterPhoneDirectCaller.callNumber(number);
+  callNumber() async{//set the number here
+  var contact = await getStoredNumber();
+    await FlutterPhoneDirectCaller.callNumber(contact ?? "9863021878");
   }
 
-  call() async{
-    const number = '9863021878'; //set the number here
-    await FlutterPhoneDirectCaller.callNumber(number);
+  //Store number
+  Future<void> storeNumber(String number) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('phoneNumber', number);
+  }
+
+  //Return Number to retrieve store number 
+  getStoredNumber() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? storedNumber = prefs.getString('phoneNumber');
+    return storedNumber;
+  }
+
+  showPopUp() async{
+    var checkNumber = await getStoredNumber();
+    if(checkNumber == null || checkNumber == ""){
+      popStatus = false;
+      return showDialog(
+        context: context, 
+        builder: (context){
+          return WillPopScope(
+            onWillPop: ()async => popStatus,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              title: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(18.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Enter a Contact that you want to call", style: TextStyle(fontSize: 18), textAlign: TextAlign.center,),
+                      const SizedBox(height: 20,),
+                      Container(
+                        height: 60,
+                        width: 200,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.only(
+                          left: 10.0,
+                          right: 10.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(5),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color.fromARGB(255, 223, 223, 223),
+                              offset: Offset(0, 5),
+                              blurRadius: 5
+                            )
+                          ]
+                        ),
+                        child: TextFormField(
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.all(15),
+                            border: InputBorder.none,
+                            labelText: "Enter a contact",
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (val){
+                            phoneNumber = val;
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20,),
+                      //Save Contact to Shared prefrence
+                      ElevatedButton(
+                        onPressed: () {
+                          if(phoneNumber != "" && phoneNumber!=null){
+                            setState(() {
+                              storeNumber(phoneNumber);
+                              popStatus = true;
+                            });
+                            Navigator.pop(context);
+                          } else{
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                duration: const Duration(milliseconds: 1000),
+                                backgroundColor: Colors.red.withOpacity(0.9),
+                                dismissDirection: DismissDirection.up,
+                                margin: EdgeInsets.only(
+                                  bottom: MediaQuery.of(context).size.height - 100,
+                                  right: 20,
+                                  left: 20),
+                                behavior: SnackBarBehavior.floating,
+                                content: const Text("Please fill all the Dimensions.", style: TextStyle(color: Colors.white),),
+                              )
+                            );
+                          }
+                        }, 
+                        child: const Text("Save")
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            ),
+          );
+        },
+      );
+    } else{
+      popStatus = true;
+      return showDialog(
+        context: context, 
+        builder: (context){
+          return WillPopScope(
+            onWillPop: ()async => popStatus,
+            child: AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.0),
+              ),
+              title: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(18.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Enter a Contact that you want to call", style: TextStyle(fontSize: 18), textAlign: TextAlign.center,),
+                      const SizedBox(height: 20,),
+                      Container(
+                        height: 60,
+                        width: 200,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.only(
+                          left: 10.0,
+                          right: 10.0,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(5),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color.fromARGB(255, 223, 223, 223),
+                              offset: Offset(0, 5),
+                              blurRadius: 5
+                            )
+                          ]
+                        ),
+                        child: TextFormField(
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            contentPadding: EdgeInsets.all(15),
+                            border: InputBorder.none,
+                            labelText: "Enter a contact",
+                          ),
+                          onChanged: (val){
+                            phoneNumber = val;
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 20,),
+                      //Save Contact to Shared prefrence
+                      ElevatedButton(
+                        onPressed: () {
+                          if(phoneNumber != "" && phoneNumber!=null){
+                            setState(() {
+                              storeNumber(phoneNumber);
+                              popStatus = true;
+                            });
+                            Navigator.pop(context);
+                          } else{
+                            setState(() {
+                              storeNumber(checkNumber);
+                              popStatus = true;
+                            });
+                            Navigator.pop(context);
+                          }
+                        }, 
+                        child: const Text("Save")
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            ),
+          );
+        },
+      );
+    }
   }
 }
